@@ -15,6 +15,8 @@ Open the local URL printed by Vite. Run `npm run build` to create a production b
 
 Open **Retailer sign in**, complete the required business form and submit. The application is stored in this browser's LocalStorage and shown as **Pending approval**. Use **Approve demo** or **Reset to pending** to preview the approval state. This is a local demonstration only: it does not transmit form data, verify a business or expose prices.
 
+The **Retailer sign in** link opens a demo sign-in form. It matches the email and mobile number against this browser's saved application; a pending application remains pending, while a demo-approved application can preview a local signed-in state. No password, backend account or real authentication is used.
+
 The enquiry cart and wishlist also persist in LocalStorage. Cart quantities are complete sets; unknown size breakups, set contents, prices and stock are intentionally left for the 7Feelings team to confirm.
 
 ## Catalogue UI

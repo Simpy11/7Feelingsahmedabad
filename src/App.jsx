@@ -10,7 +10,7 @@ import { campaignImages, categories, products } from './catalog.js';
 import logo from '../logo/WhatsApp Image 2026-11-04 at 13.59.08.jpeg?url';
 
 const StoreContext = createContext(null);
-const STORAGE = { cart: '7f-cart', wishlist: '7f-wishlist', application: '7f-application', approved: '7f-approved' };
+const STORAGE = { cart: '7f-cart', wishlist: '7f-wishlist', application: '7f-application', approved: '7f-approved', demoSession: '7f-demo-session' };
 const readStorage = (key, fallback) => {
   try {
     const stored = localStorage.getItem(key);
@@ -26,14 +26,16 @@ function StoreProvider({ children }) {
   const [wishlist, setWishlist] = useState(() => readStorage(STORAGE.wishlist, []));
   const [application, setApplication] = useState(() => readStorage(STORAGE.application, null));
   const [approved, setApproved] = useState(() => readStorage(STORAGE.approved, false));
+  const [demoSession, setDemoSession] = useState(() => readStorage(STORAGE.demoSession, false));
   const [toast, setToast] = useState('');
   const [quickView, setQuickView] = useState(null);
   useEffect(() => localStorage.setItem(STORAGE.cart, JSON.stringify(cart)), [cart]);
   useEffect(() => localStorage.setItem(STORAGE.wishlist, JSON.stringify(wishlist)), [wishlist]);
   useEffect(() => localStorage.setItem(STORAGE.application, JSON.stringify(application)), [application]);
   useEffect(() => localStorage.setItem(STORAGE.approved, JSON.stringify(approved)), [approved]);
+  useEffect(() => localStorage.setItem(STORAGE.demoSession, JSON.stringify(demoSession)), [demoSession]);
   const value = {
-    cart, wishlist, application, approved, toast, setToast, quickView, setQuickView, setApplication, setApproved,
+    cart, wishlist, application, approved, demoSession, setDemoSession, toast, setToast, quickView, setQuickView, setApplication, setApproved,
     addCart(product, color, sets) {
       setCart((items) => {
         const key = `${product.id}-${color}`;
@@ -43,8 +45,14 @@ function StoreProvider({ children }) {
           : [...items, { key, productId: product.id, color, sets }];
       });
     },
-    setCartSets(key, sets) { setCart((items) => items.map((item) => item.key === key ? { ...item, sets } : item).filter((item) => item.sets > 0)); },
-    removeCart(key) { setCart((items) => items.filter((item) => item.key !== key)); },
+    setCartSets(key, sets) {
+      setCart((items) => items.map((item) => item.key === key ? { ...item, sets } : item).filter((item) => item.sets > 0));
+      if (sets < 1) setToast('Style removed from your enquiry');
+    },
+    removeCart(key) {
+      setCart((items) => items.filter((item) => item.key !== key));
+      setToast('Style removed from your enquiry');
+    },
     toggleWishlist(id) {
       const saved = wishlist.includes(id);
       setWishlist((items) => saved ? items.filter((item) => item !== id) : [...items, id]);
@@ -101,10 +109,10 @@ function Header({ search, setSearch, mobileMenu, setMobileMenu }) {
         <Search size={19} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search styles, prints, or catalogue references..." aria-label="Search products" /><button aria-label="Submit search"><ArrowRight size={18} /></button>
       </form>
       <div className="header-actions">
-        <Link to="/register" className="header-link"><span className="action-icon"><UserRound size={20} /></span><span>Retailer</span></Link>
+        <Link to="/register?mode=login" className="header-link"><span className="action-icon"><UserRound size={20} /></span><span>Retailer</span></Link>
         <Link to="/wishlist" className="header-link"><span className="action-icon"><Heart size={20} /></span><span>Wishlist</span>{wishlist.length > 0 && <b className="count">{wishlist.length}</b>}</Link>
         <Link to="/cart" className="header-link"><span className="action-icon"><ShoppingBag size={20} /></span><span>Enquiry cart</span>{cart.length > 0 && <b className="count">{cart.length}</b>}</Link>
-        <Link to="/register" className="button button-small">Retailer sign in <ArrowRight size={15} /></Link>
+        <Link to="/register?mode=login" className="button button-small">Retailer sign in <ArrowRight size={15} /></Link>
       </div>
     </header>
   );
@@ -168,7 +176,7 @@ function ProductCarousel({ eyebrow, title, items, id }) {
   }, [items.length]);
   const scroll = (direction) => slider.current?.scrollBy({ left: direction * slider.current.clientWidth * 0.82, behavior: 'smooth' });
   return <div className="carousel-shell">
-    <div className="section-heading"><div><span className="eyebrow">{eyebrow}</span><h2>{title}</h2><p className="carousel-note">Catalogue imagery only · Confirm product details with our team</p></div><div className="carousel-controls"><button onClick={() => scroll(-1)} disabled={!canGoBack} aria-label={`Scroll ${title} backwards`}><ChevronLeft /></button><button onClick={() => scroll(1)} disabled={!canGoForward} aria-label={`Scroll ${title} forwards`}><ChevronRight /></button><Link to="/collection" className="text-link">View all <ArrowRight size={15} /></Link></div></div>
+    <div className="section-heading"><div><span className="eyebrow">{eyebrow}</span><h2>{title}</h2><p className="carousel-note">Catalogue imagery only · Confirm product details with our team</p></div><div className="carousel-controls"><button type="button" onClick={() => scroll(-1)} disabled={!canGoBack} aria-label={`Scroll ${title} backwards`}><ChevronLeft /></button><button type="button" onClick={() => scroll(1)} disabled={!canGoForward} aria-label={`Scroll ${title} forwards`}><ChevronRight /></button><Link to="/collection" className="text-link">View all <ArrowRight size={15} /></Link></div></div>
     <div className="carousel-track" id={id} ref={slider} onScroll={updateArrows}><ProductGrid items={items} onQuickView={setQuickView} /></div>
   </div>;
 }
@@ -180,9 +188,9 @@ function ProductCard({ product, saved, onWishlist, onQuickView }) {
   return <article className="product-card">
     <div className={`product-image ${imageLoaded ? 'image-loaded' : 'image-loading'}`}>
       <Link to={`/product/${product.id}`} aria-label={`View ${product.name}`}><img src={product.image} alt={imageLabel} loading="lazy" onLoad={() => setImageLoaded(true)} /></Link>
-      <button className={`wishlist-button ${saved ? 'saved' : ''}`} aria-label={saved ? 'Remove from wishlist' : 'Add to wishlist'} onClick={onWishlist}><Heart size={18} fill={saved ? 'currentColor' : 'none'} /></button>
+      <button type="button" className={`wishlist-button ${saved ? 'saved' : ''}`} aria-label={saved ? 'Remove from wishlist' : 'Add to wishlist'} onClick={onWishlist}><Heart size={18} fill={saved ? 'currentColor' : 'none'} /></button>
       <span className="product-tag">THE COLLECTION</span>
-      <button className="quick-view-button" onClick={onQuickView}><Search size={15} /> Quick view</button>
+      <button type="button" className="quick-view-button" onClick={onQuickView}><Search size={15} /> Quick view</button>
     </div>
     <div className="product-info">
       <span className="product-type">KURTA · ETHNIC WEAR</span>
@@ -212,10 +220,11 @@ function Collection() {
     });
     if (sort === 'name') items = [...items].sort((a, b) => a.name.localeCompare(b.name));
     if (sort === 'code') items = [...items].sort((a, b) => a.code.localeCompare(b.code));
+    if (sort === 'code-desc') items = [...items].sort((a, b) => b.code.localeCompare(a.code));
     return items;
   }, [search, category, type, sort]);
   return <div className="container page-wrap"><div className="breadcrumbs"><Link to="/">Home</Link><ChevronRight size={14} /> Collection</div><div className="listing-title"><div><span className="eyebrow">THE 7FEELINGS CATALOGUE</span><h1>{search ? `Results for “${search}”` : category || 'Explore the collection'}</h1><p>Browse visual references from our supplied collection. Confirm availability, fabric, set details and wholesale pricing with our team.</p></div><form className="listing-search" onSubmit={(event) => { event.preventDefault(); const query = collectionSearch.trim(); setParams(query ? { q: query } : {}); }}><Search size={18} /><input value={collectionSearch} onChange={(event) => setCollectionSearch(event.target.value)} placeholder="Search styles or reference..." /><button aria-label="Search collection"><ArrowRight size={17} /></button></form></div>
-    <div className="listing-layout"><aside className="filter-panel"><div className="filter-heading">REFINE THE EDIT <ArrowDownWideNarrow size={16} /></div><label className="filter-label">Category</label><button className="filter-option active" onClick={() => setParams({})}><span>Kurtis & ethnic wear</span><span>{products.length}</span></button><button className="filter-option" onClick={() => setParams({ q: 'printed' })}><span>Printed styles</span><ChevronRight size={15} /></button><div className="filter-divider" /><label className="filter-label" htmlFor="type-filter">Product type</label><select id="type-filter" value={type} onChange={(event) => setType(event.target.value)}><option>All styles</option><option>Kurta / ethnic wear</option></select><div className="filter-divider" /><div className="filter-note"><ShieldCheck size={17} /><span>Wholesale pricing is shared with approved retailers. Apply to learn more.</span><Link to="/register">Retailer access <ArrowRight size={14} /></Link></div></aside><div className="listing-results"><div className="result-toolbar"><span><b>{filtered.length}</b> catalogue references <span className="result-note">· details confirmed on enquiry</span></span><label>Sort by <select value={sort} onChange={(event) => setSort(event.target.value)}><option value="featured">Featured</option><option value="name">Name</option><option value="code">Reference code</option></select></label></div>{filtered.length ? <ProductGrid items={filtered} /> : <EmptyState title="No styles found" text="Try another search or browse the full collection." action={<button className="button" onClick={() => { setParams({}); setType('All styles'); }}>View all styles</button>} />}</div></div></div>;
+    <div className="listing-layout"><aside className="filter-panel"><div className="filter-heading">REFINE THE EDIT <ArrowDownWideNarrow size={16} /></div><label className="filter-label">Category</label><button type="button" className={`filter-option ${!category && !search ? 'active' : ''}`} onClick={() => { setParams({}); setType('All styles'); }}><span>Kurtis & ethnic wear</span><span>{products.length}</span></button><button type="button" className={`filter-option ${search === 'printed' ? 'active' : ''}`} onClick={() => { setParams({ q: 'printed' }); setType('All styles'); }}><span>Printed styles</span><ChevronRight size={15} /></button><div className="filter-divider" /><label className="filter-label" htmlFor="type-filter">Product type</label><select id="type-filter" value={type} onChange={(event) => setType(event.target.value)}><option>All styles</option><option>Kurta / ethnic wear</option></select><div className="filter-divider" /><div className="filter-note"><ShieldCheck size={17} /><span>Wholesale pricing is shared with approved retailers. Apply to learn more.</span><Link to="/register">Retailer access <ArrowRight size={14} /></Link></div></aside><div className="listing-results"><div className="result-toolbar"><span><b>{filtered.length}</b> catalogue references <span className="result-note">· details confirmed on enquiry</span></span><label>Sort by <select value={sort} onChange={(event) => setSort(event.target.value)}><option value="featured">Featured</option><option value="code">Reference code: low to high</option><option value="code-desc">Reference code: high to low</option></select></label></div>{filtered.length ? <ProductGrid items={filtered} /> : <EmptyState title="No styles found" text="Try another search or browse the full collection." action={<button type="button" className="button" onClick={() => { setParams({}); setType('All styles'); }}>View all styles</button>} />}</div></div></div>;
 }
 
 function ProductPage() {
@@ -230,9 +239,12 @@ function ProductPage() {
 }
 
 function Register() {
-  const { application, setApplication, approved, setApproved } = useStore();
+  const { application, setApplication, approved, setApproved, demoSession, setDemoSession, setToast } = useStore();
+  const [params, setParams] = useSearchParams();
+  const loginMode = params.get('mode') === 'login';
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState('');
+  const [loginError, setLoginError] = useState('');
   const submit = (event) => {
     event.preventDefault();
     const form = event.currentTarget;
@@ -243,10 +255,35 @@ function Register() {
     const record = { ...values, visitingCard: docs[0] ?? '', businessProof: docs[1] ?? '', status: 'Pending approval', submittedAt: new Date().toISOString() };
     setApplication(record);
     setApproved(false);
+    setDemoSession(false);
     setSubmitted(true);
     setError('');
+    setToast('Retailer application saved as pending approval');
   };
-  return <div className="container page-wrap"><div className="breadcrumbs"><Link to="/">Home</Link><ChevronRight size={14} />Retailer registration</div><div className="registration-layout"><div className="registration-intro"><span className="eyebrow">FOR BOUTIQUES & FASHION RETAILERS</span><h1>Let’s make something <em>beautiful.</em></h1><p>Tell us a little about your business. Our Ahmedabad team will follow up to discuss the collection and wholesale terms.</p><div className="registration-benefits"><span><Check /> Wholesale collection access</span><span><Check /> Setwise ordering details</span><span><Check /> A personal introduction to our team</span></div><div className="demo-notice"><ShieldCheck size={18} /><span><b>Frontend demonstration</b>This form is a local demo only. It does not send your information to 7Feelings.</span></div></div><div className="registration-form-wrap"><h2>Retailer application</h2><p>All information is saved in this browser only.</p>{submitted || application ? <div className="application-status"><div className="status-icon"><Clock3 /></div><span className="eyebrow">APPLICATION STATUS</span><h3>{approved ? 'Retailer access enabled' : 'Your application is pending'}</h3><p>{approved ? 'Demo approval is active in this browser. Wholesale prices remain hidden because verified prices were not provided.' : 'Thanks for your interest. Your demo application is saved locally. This is not a real verification or approval.'}</p><div className="status-chip"><span />{approved ? 'Demo approved' : 'Pending approval'}</div><div className="demo-approval"><b>Demo approval controls</b><span>Use these controls to preview the retailer experience. No real review takes place.</span><div><button className="button button-small" onClick={() => setApproved(true)}>Approve demo</button><button className="text-link" onClick={() => setApproved(false)}>Reset to pending</button></div></div><button className="form-reset" onClick={() => { setApplication(null); setSubmitted(false); }}>Submit another application</button></div> : <form className="registration-form" onSubmit={submit} onInvalid={() => setError('Please complete all required fields.')}><div className="form-grid"><FormField label="Business name" name="businessName" required /><FormField label="Owner name" name="ownerName" required /><FormField label="Mobile number" name="mobile" required pattern="[0-9+ ]{8,16}" type="tel" /><FormField label="WhatsApp number" name="whatsapp" required pattern="[0-9+ ]{8,16}" type="tel" /><FormField label="Email address" name="email" required type="email" /><FormField label="State" name="state" required /><FormField label="City" name="city" required /><FormField label="Business type" name="businessType" required select options={['Boutique', 'Retail store', 'Online retailer', 'Distributor', 'Other']} /><label className="form-field full-field"><span>Full business address *</span><textarea name="address" required rows="3" /></label><FormField label="GST number (optional)" name="gst" /><label className="form-field"><span>Upload visiting card (optional)</span><input type="file" name="visitingCard" accept="image/*,.pdf" /></label><label className="form-field full-field"><span>Upload business / address proof (optional)</span><input type="file" name="businessProof" accept="image/*,.pdf" /></label></div>{error && <span className="form-error">{error}</span>}<button className="button form-submit">Submit retailer application <ArrowRight size={17} /></button><small className="privacy-note"><ShieldCheck size={14} /> Demo only. Files are not uploaded or transmitted.</small></form>}</div></div></div>;
+  const submitLogin = (event) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const email = String(formData.get('loginEmail') ?? '').trim().toLowerCase();
+    const mobile = String(formData.get('loginMobile') ?? '').replace(/\D/g, '');
+    const applicationEmail = String(application?.email ?? '').trim().toLowerCase();
+    const applicationMobile = String(application?.mobile ?? '').replace(/\D/g, '');
+    if (!application || email !== applicationEmail || mobile !== applicationMobile) {
+      setLoginError('No matching demo retailer application was found. Check your details or register first.');
+      setToast('Demo sign-in details did not match');
+      setDemoSession(false);
+      return;
+    }
+    if (!approved) {
+      setLoginError('Your retailer application is still pending approval.');
+      setToast('Your application is still pending approval');
+      setDemoSession(false);
+      return;
+    }
+    setLoginError('');
+    setDemoSession(true);
+    setToast('Demo retailer sign-in successful');
+  };
+  return <div className="container page-wrap"><div className="breadcrumbs"><Link to="/">Home</Link><ChevronRight size={14} />Retailer registration</div><div className="registration-layout"><div className="registration-intro"><span className="eyebrow">FOR BOUTIQUES & FASHION RETAILERS</span><h1>Let’s make something <em>beautiful.</em></h1><p>Tell us a little about your business. Our Ahmedabad team will follow up to discuss the collection and wholesale terms.</p><div className="registration-benefits"><span><Check /> Wholesale collection access</span><span><Check /> Setwise ordering details</span><span><Check /> A personal introduction to our team</span></div><div className="demo-notice"><ShieldCheck size={18} /><span><b>Frontend demonstration</b>This form is a local demo only. It does not send your information to 7Feelings.</span></div></div><div className="registration-form-wrap"><div className="registration-tabs"><button type="button" className={`registration-tab ${!loginMode ? 'active' : ''}`} onClick={() => { setParams({}); setLoginError(''); }}>Retailer registration</button><button type="button" className={`registration-tab ${loginMode ? 'active' : ''}`} onClick={() => { setParams({ mode: 'login' }); setLoginError(''); }}>Retailer sign in</button></div>{loginMode ? <><h2>Retailer demo sign in</h2><p>Use the email and mobile number from your local demo application.</p>{demoSession && <div className="demo-notice login-notice"><ShieldCheck size={18} /><span><b>Signed in for this demo</b>Your demo retailer session is active on this browser. No real account service is connected.</span><button type="button" className="text-link" onClick={() => { setDemoSession(false); setToast('Demo retailer signed out'); }}>Sign out</button></div>}<form className="registration-form" onSubmit={submitLogin}><div className="form-grid"><FormField label="Email address" name="loginEmail" required type="email" /><FormField label="Mobile number" name="loginMobile" required pattern="[0-9+ ]{8,16}" type="tel" /></div>{loginError && <span className="form-error" role="alert">{loginError}</span>}<button className="button form-submit">Sign in to demo account <ArrowRight size={17} /></button><small className="privacy-note"><ShieldCheck size={14} /> Demo-only sign in uses your browser-stored retailer application.</small></form><button type="button" className="form-reset register-switch" onClick={() => { setParams({}); setLoginError(''); }}>New retailer? Register here</button></> : <><h2>Retailer application</h2><p>All information is saved in this browser only.</p>{submitted || application ? <div className="application-status"><div className="status-icon"><Clock3 /></div><span className="eyebrow">APPLICATION STATUS</span><h3>{approved ? 'Retailer access enabled' : 'Your application is pending'}</h3><p>{approved ? 'Demo approval is active in this browser. Wholesale prices remain hidden because verified prices were not provided.' : 'Thanks for your interest. Your demo application is saved locally. This is not a real verification or approval.'}</p><div className="status-chip"><span />{approved ? 'Demo approved' : 'Pending approval'}</div><div className="demo-approval"><b>Demo approval controls</b><span>Use these controls to preview the retailer experience. No real review takes place.</span><div><button type="button" className="button button-small" onClick={() => { setApproved(true); setToast('Demo retailer application approved'); }}>Approve demo</button><button type="button" className="text-link" onClick={() => { setApproved(false); setDemoSession(false); setToast('Demo application reset to pending'); }}>Reset to pending</button></div></div><button type="button" className="form-reset" onClick={() => { setApplication(null); setApproved(false); setDemoSession(false); setSubmitted(false); setToast('Demo application cleared'); }}>Submit another application</button></div> : <form className="registration-form" onSubmit={submit} onInvalid={() => setError('Please complete all required fields.')}><div className="form-grid"><FormField label="Business name" name="businessName" required /><FormField label="Owner name" name="ownerName" required /><FormField label="Mobile number" name="mobile" required pattern="[0-9+ ]{8,16}" type="tel" /><FormField label="WhatsApp number" name="whatsapp" required pattern="[0-9+ ]{8,16}" type="tel" /><FormField label="Email address" name="email" required type="email" /><FormField label="State" name="state" required /><FormField label="City" name="city" required /><FormField label="Business type" name="businessType" required select options={['Boutique', 'Retail store', 'Online retailer', 'Distributor', 'Other']} /><label className="form-field full-field"><span>Full business address *</span><textarea name="address" required rows="3" /></label><FormField label="GST number (optional)" name="gst" /><label className="form-field"><span>Upload visiting card (optional)</span><input type="file" name="visitingCard" accept="image/*,.pdf" /></label><label className="form-field full-field"><span>Upload business / address proof (optional)</span><input type="file" name="businessProof" accept="image/*,.pdf" /></label></div>{error && <span className="form-error" role="alert">{error}</span>}<button className="button form-submit">Submit retailer application <ArrowRight size={17} /></button><small className="privacy-note"><ShieldCheck size={14} /> Demo only. Files are not uploaded or transmitted.</small></form>}</>}</div></div></div>;
 }
 
 function FormField({ label, name, required, type = 'text', pattern, select, options }) {

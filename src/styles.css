@@ -17,7 +17,7 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 320px; background: #fff; }
+body { margin: 0; min-width: 0; background: #fff; }
 button, input, select, textarea { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
 button { cursor: pointer; }
@@ -541,10 +541,12 @@ html { scroll-behavior: smooth; scroll-padding-top: 150px; }
   .carousel-track .product-card { flex-basis: calc((100% - 36px) / 3); }
   .product-facts { font-size: 8px; }
   .product-facts b { font-size: 8px; }
+  .hero-stamp { right: 0; }
 }
 @media (max-width: 700px) {
   html { scroll-padding-top: 125px; }
   body { padding-bottom: calc(65px + env(safe-area-inset-bottom)); }
+  .hero-visual { overflow: clip; }
   .sticky-shell { top: 0; }
   .header { min-height: 73px; }
   .navigation.navigation-open { position: absolute; top: 100%; right: 0; left: 0; display: block; background: #fff; box-shadow: 0 10px 18px #24161c1c; }
@@ -609,3 +611,10 @@ html { scroll-behavior: smooth; scroll-padding-top: 150px; }
   .product-facts b { font-size: 10px; }
   .product-foot { font-size: 10px; }
 }
+.registration-tabs { display: flex; gap: 18px; margin: -4px 0 22px; border-bottom: 1px solid var(--line); }
+.registration-tab { position: relative; padding: 0 0 11px; border: 0; color: #817771; background: transparent; font-size: 10px; font-weight: 600; }
+.registration-tab.active { color: var(--wine); }
+.registration-tab.active::after { position: absolute; right: 0; bottom: -1px; left: 0; height: 2px; content: ""; background: var(--wine); }
+.login-notice { width: 100%; margin: 0 0 18px; }
+.login-notice .text-link { padding: 0; border: 0; background: transparent; }
+.register-switch { display: inline-block; }
